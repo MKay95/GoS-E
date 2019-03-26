@@ -290,7 +290,7 @@ function Ahri:LoadMenu()
 	self.Menu = MenuElement({type = MENU, id = "Ahri", name = "MKayAhri"})
 	--ComboMenu
 	self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-	self.Menu.Combo:MenuElement({id = "UseQ", name = "[Q]", value = true})
+	self.Menu.Combo:MenuElement({id = "UseQe", name = "[Q]", value = true})
 	self.Menu.Combo:MenuElement({id = "UseW", name = "[W]", value = true})
 	self.Menu.Combo:MenuElement({id = "UseE", name = "[E]", value = true})
 	self.Menu.Combo:MenuElement({type = MENU, id = "UseR", name = "Ult Settings"})
@@ -317,6 +317,8 @@ function Ahri:LoadMenu()
 	--Activator
 	self.Menu:MenuElement({type = MENU, id = "Activator", name = "Activator"})
 	self.Menu.Activator:MenuElement({id = "GLP", name = "Hextech GLP in ComboMode", value = true})
+	self.Menu.Activator:MenuElement({id = "Zhonyas", name = "Zhonyas/StopWatch", value = true})	
+	self.Menu.Activator:MenuElement({id = "HP", name = "HP", value = 15, min = 0, max = 100, step = 1, identifier = "%"})
 
 	--Drawing
 	self.Menu:MenuElement({type = MENU, id = "Drawing", name = "Drawings"})
@@ -337,6 +339,7 @@ function Ahri:Tick()
 			self:JungleClear()
 		elseif Mode == "Flee" then
 		end
+		self:Zhonyas()
 		end
 	end
 
@@ -360,6 +363,30 @@ function Ahri:GLP800()
 		end
 	end
 end
+
+function Ahri:Zhonyas()
+if  myHero.dead then return end
+			--Zhonyas
+	if EnemiesAround( myHero.pos,2000) then	
+		if self.Menu.Activator.Zhonyas:Value() then
+		local Zhonyas = GetItemSlot( myHero, 3157)
+			if Zhonyas > 0 and Ready(Zhonyas) then 
+				if  myHero.health/ myHero.maxHealth <= self.Menu.Activator.HP:Value()/100 then
+					Control.CastSpell(ItemHotKey[Zhonyas])
+				end
+			end
+		end
+			--Stopwatch
+		if self.Menu.Activator.Zhonyas:Value() then
+		local Stop = GetItemSlot( myHero, 2420)
+			if Stop > 0 and Ready(Stop) then 
+				if  myHero.health/ myHero.maxHealth <= self.Menu.Activator.HP:Value()/100 then
+					Control.CastSpell(ItemHotKey[Stop])
+				end
+			end
+		end
+	end
+end	
 
 function Ahri:Draw()
 	local GLP = GetItemSlot(myHero, 3030)
