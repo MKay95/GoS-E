@@ -13,9 +13,7 @@ local menu = 1
 local TEAM_ALLY = myHero.team
 local TEAM_ENEMY = 300 - myHero.team
 local TEAM_JUNGLE = 300
-local Allies = {}; local Enemies = {}; local Turrets = {}; local Units = {}
-local GameLatency = Game.Latency
-local GameTimer = Game.Timer
+local Allies = {}; local Enemies = {}; local Turrets = {}; local Units = {}; local AllyHeroes = {}
 
 local function Ready(spell)
     return myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 and myHero:GetSpellData(spell).mana <= myHero.mana
@@ -102,7 +100,6 @@ function IsImmobileTarget(unit)
 		return false
 end
 
-
 local function GetTarget(range)
 	local target = nil
 		if Orb == 1 then
@@ -164,7 +161,6 @@ function IsUnderTurret(unit)
     return false
 end
 
-
 function GetDistanceSqr(p1, p2)
 	if not p1 then return math.huge end
 	p2 = p2 or myHero
@@ -223,40 +219,6 @@ function LeftClick(pos)
 	DelayAction(ReturnCursor,0.05,{pos})
 end
 
-function Ahri:EnemiesAround(pos, range)
-    local pos = pos.pos
-    local N = 0
-    for i = 1, Game.HeroCount() do
-        local hero = Game.Hero(i)
-        if (IsValid(hero) and hero.isEnemy and GetDistanceSqr(pos, hero.pos) < range * range) then
-            N = N + 1
-        end
-    end
-    return N
-end
-
-function Ahri:allysAround(pos, range)
-    local pos = pos.pos
-    local N = 0
-    for i = 1, Game.HeroCount() do
-        local hero = Game.Hero(i)
-        if (IsValid(hero) and hero.isAlly and GetDistanceSqr(pos, hero.pos) < range * range) then
-            N = N + 1
-        end
-    end
-    return N
-end
-
-local function GetAllyHeroes()
-    local _AllyHeroes = {}
-    for i = 1, Game.HeroCount() do
-        local unit = Game.Hero(i)
-        if IsValid(unit) and unit.isAlly then
-            table.insert(_AllyHeroes, unit)
-        end
-    end
-    return _AllyHeroes
-end
 ---SkillData
 local QData =
 {
@@ -290,7 +252,7 @@ function Ahri:LoadMenu()
 	self.Menu = MenuElement({type = MENU, id = "Ahri", name = "MKayAhri"})
 	--ComboMenu
 	self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-	self.Menu.Combo:MenuElement({id = "UseQe", name = "[Q]", value = true})
+	self.Menu.Combo:MenuElement({id = "UseQ", name = "[Q]", value = true})
 	self.Menu.Combo:MenuElement({id = "UseW", name = "[W]", value = true})
 	self.Menu.Combo:MenuElement({id = "UseE", name = "[E]", value = true})
 	self.Menu.Combo:MenuElement({type = MENU, id = "UseR", name = "Ult Settings"})
@@ -309,7 +271,7 @@ function Ahri:LoadMenu()
 	self.Menu.JClear:MenuElement({id = "UseQ", name = "[Q]", value = true})
 	self.Menu.JClear:MenuElement({id = "Mana", name = "Min Mana to JungleClear", value = 40, min = 0, max = 100, identifier = "%"})
 	--KillSteal
-	self.Menu:MenuElement({type = MENU, id = "ks", name = "KillSteal"})
+	self.Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
 	self.Menu.KillSteal:MenuElement({id = "UseQ", name = "[Q]", value = true})
 	self.Menu.KillSteal:MenuElement({id = "UseW", name = "[W]", value = true})
 	self.Menu.KillSteal:MenuElement({id = "UseE", name = "[E]", value = true})
@@ -317,9 +279,6 @@ function Ahri:LoadMenu()
 	--Activator
 	self.Menu:MenuElement({type = MENU, id = "Activator", name = "Activator"})
 	self.Menu.Activator:MenuElement({id = "GLP", name = "Hextech GLP in ComboMode", value = true})
-	self.Menu.Activator:MenuElement({id = "Zhonyas", name = "Zhonyas/StopWatch", value = true})	
-	self.Menu.Activator:MenuElement({id = "HP", name = "HP", value = 15, min = 0, max = 100, step = 1, identifier = "%"})
-
 	--Drawing
 	self.Menu:MenuElement({type = MENU, id = "Drawing", name = "Drawings"})
 	self.Menu.Drawing:MenuElement({id = "DrawQ", name = "Draw [Q] Range", value = true})
@@ -339,7 +298,6 @@ function Ahri:Tick()
 			self:JungleClear()
 		elseif Mode == "Flee" then
 		end
-		self:Zhonyas()
 		end
 	end
 
@@ -357,36 +315,12 @@ function Ahri:GLP800()
 	local GLP = GetItemSlot(myHero, 3030)
 	if IsValid(target) then
 		if self.Menu.Activator.GLP:Value() and GLP > 0 and Ready(GLP) then
-			if myHero.pos:DistanceTo(target.pos) <= 1050 and pred.Hitchance >= _G.HITCHANCE_HIGH then
+			if myHero.pos:DistanceTo(target.pos) <= 1050 then
 				Control.CastSpell(ItemHotKey[GLP], target.pos)
 			end
 		end
 	end
 end
-
-function Ahri:Zhonyas()
-if  myHero.dead then return end
-			--Zhonyas
-	if EnemiesAround( myHero.pos,2000) then	
-		if self.Menu.Activator.Zhonyas:Value() then
-		local Zhonyas = GetItemSlot( myHero, 3157)
-			if Zhonyas > 0 and Ready(Zhonyas) then 
-				if  myHero.health/ myHero.maxHealth <= self.Menu.Activator.HP:Value()/100 then
-					Control.CastSpell(ItemHotKey[Zhonyas])
-				end
-			end
-		end
-			--Stopwatch
-		if self.Menu.Activator.Zhonyas:Value() then
-		local Stop = GetItemSlot( myHero, 2420)
-			if Stop > 0 and Ready(Stop) then 
-				if  myHero.health/ myHero.maxHealth <= self.Menu.Activator.HP:Value()/100 then
-					Control.CastSpell(ItemHotKey[Stop])
-				end
-			end
-		end
-	end
-end	
 
 function Ahri:Draw()
 	local GLP = GetItemSlot(myHero, 3030)
@@ -423,21 +357,6 @@ function Ahri:KillSteal()
 			local pred = GetGamsteronPrediction(target, EData, myHero)
 			if EDmg >= hp and myHero.pos:DistanceTo(target.pos) <= 975 and pred.Hitchance >= _G.HITCHANCE_HIGH then
 				Control.CastSpell(HK_E, pred.CastPosition)
-			end
-		end
-		if self.Menu.KillSteal.UseIgn:Value() then
-			if myHero:GetSpellData(SUMMONER_1).name == "SummonerDot" and myHero.pos:DistanceTo(target.pos) <= 600 then
-				if Ready(SUMMONER_1) then
-					if IGdamage >= hp + target.hpRegen * 3 then
-						Control.CastSpell(HK_SUMMONER_1, target)
-					end
-				end
-			elseif myHero:GetSpellData(SUMMONER_2).name == "SummonerDot" and myHero.pos:DistanceTo(target.pos) <= 600  then
-				if Ready(SUMMONER_2) then
-					if IGdamage >= hp + target.hpRegen * 3 then
-						Control.CastSpell(HK_SUMMONER_2, target)
-					end
-				end
 			end
 		end
 	end
@@ -516,4 +435,8 @@ function Ahri:JungleClear()
 			end
 		end
 	end
+end
+
+function OnLoad()
+	Ahri()
 end
